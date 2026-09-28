@@ -1,0 +1,10 @@
+{
+  "D_relay_0_um2_s": 50.0,
+  "baseline_KB_uM": 0.1,
+  "baseline_KA_uM": 1.0,
+  "equal_KB_uM": 0.1,
+  "equal_KA_uM": 0.1,
+  "c_min_uM": 0.001,
+  "c_max_uM": 100.0,
+  "n_points": 1000
+}

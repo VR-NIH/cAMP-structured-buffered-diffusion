@@ -1,0 +1,143 @@
+FIGURE S3 — REVISED PULSE-FRACTIONATION PARAMETER SET
+=====================================================
+
+Purpose
+-------
+Parameter set for rerunning the pulse-fractionation sweep so that Fig. S3 uses the
+same corrected flux boundary treatment and baseline condition as revised Fig. 2E–F.
+
+CORE TRANSPORT PARAMETERS
+-------------------------
+D0 = 50.0 um^2/s
+K_B = 0.1 uM
+K_A = 1.0 uM
+L = 20.0 um
+N = 150 grid nodes
+distal_x = 20.0 um
+resting_cAMP = 0.005 uM   # 5 nM, matched to revised Fig. 2E–F
+t_end = 12.0 s
+
+OCCUPANCY-DEPENDENT MOBILITY
+----------------------------
+D_relay(c) = D0 * [c/(K_B + c)] * [K_A/(K_A + c)]
+
+Interface mobility for the flux-driven simulations:
+Harmonic mean
+D_(i+1/2) = 2*D_i*D_(i+1)/(D_i + D_(i+1))
+
+PULSE PROTOCOL
+--------------
+Pulse numbers:
+N_pulse = [1, 2, 4, 8, 16, 32, 64]
+
+Fixed instantaneous proximal input flux:
+J_in = 60.0 uM*um/s
+
+Pulse-distribution window:
+T_first = 0.2 s
+T_last  = 10.0 s
+Window  = 9.8 s
+
+Minimum allowed pulse duration:
+MIN_TAU = 0.02 s
+
+For total integrated input I_total and pulse number N_pulse:
+tau = I_total / (N_pulse * J_in)
+interval = (T_last - T_first) / N_pulse
+start_j = T_first + j*interval,  j = 0,...,N_pulse-1
+end_j = start_j + tau
+
+A protocol is excluded if:
+tau < MIN_TAU
+or
+tau > interval
+
+FIG. S3A — EFFECTIVE PDE-CLEARANCE SWEEP
+----------------------------------------
+Fixed total input:
+I_total = 120 uM*um
+
+Effective PDE-mediated clearance values:
+k_PDE = [0.50, 0.75, 1.00, 1.25, 1.50] s^-1
+
+Pulse numbers:
+[1, 2, 4, 8, 16, 32, 64]
+
+The Fig. 2E–F reference condition is explicitly included:
+I_total = 120 uM*um
+k_PDE = 1.00 s^-1
+
+FIG. S3B — TOTAL-INPUT SWEEP
+----------------------------
+Fixed effective PDE-mediated clearance:
+k_PDE = 1.00 s^-1
+
+Total integrated inputs:
+I_total = [40, 80, 120, 160, 200] uM*um
+
+Pulse numbers:
+[1, 2, 4, 8, 16, 32, 64]
+
+Again, the Fig. 2E–F reference condition is included at:
+I_total = 120 uM*um
+k_PDE = 1.00 s^-1
+
+BOUNDARY CONDITIONS — CORRECTED NODAL FINITE VOLUME
+----------------------------------------------------
+Interior cAMP nodes:
+dC[i]/dt = (flux[i] - flux[i-1])/dx - k_PDE*C[i]
+
+Proximal boundary node is a half-width control volume:
+dC[0]/dt = 2*flux[0]/dx + 2*J_in*source_on/dx - k_PDE*C[0]
+
+Distal reflecting boundary node is also a half-width control volume:
+dC[-1]/dt = -2*flux[-1]/dx - k_PDE*C[-1]
+
+No-flux distal boundary is therefore retained, while the imposed proximal input
+has the correct half-cell finite-volume scaling.
+
+PDE CLEARANCE
+-------------
+Primary Fig. S3 model:
+v_PDE = k_PDE * c
+
+Here k_PDE is an effective macroscopic cAMP-clearance coefficient, not an
+elementary PDE catalytic rate constant.
+
+INITIAL CONDITION
+-----------------
+c(x,0) = resting_cAMP = 0.005 uM at all grid nodes
+
+NUMERICAL INTEGRATION
+---------------------
+Integrator: scipy.integrate.solve_ivp
+Method: BDF
+rtol = 1e-5
+atol = 1e-8
+max_step = 0.03 s
+t_eval = 700 uniformly spaced time points over 0 to 12 s
+
+PARALLELIZATION
+---------------
+N_JOBS = 8   # computational only; does not affect model output
+
+PRIMARY READOUT
+---------------
+Distal relay exposure:
+E_relay = integral[D_relay(c_distal(t)) dt]
+
+Units:
+um^2
+
+Recommended y-axis label:
+Distal relay exposure, E_relay = integral D_relay dt (um^2)
+
+INTERPRETATION
+--------------
+Fig. S3 is a sensitivity/parameter-regime map for temporal packaging.
+It tests how the benefit of equal-input pulse fractionation depends on:
+(1) effective PDE-mediated clearance, and
+(2) total integrated cAMP input.
+
+The pulse-number optimum should be interpreted as a broad regime-dependent
+response, not as a universal preferred pulse number.

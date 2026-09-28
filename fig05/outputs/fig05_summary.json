@@ -1,0 +1,14 @@
+{
+  "peak_release_optimum_RT_uM": 5.878016072274915,
+  "peak_release_max_uM_per_s": 0.028793892177412034,
+  "integrated_release_optimum_RT_uM": 2.424462017082328,
+  "integrated_release_max_uM": 0.04656857262106461,
+  "no_feedback_peak_release_monotonic": true,
+  "no_feedback_integrated_release_monotonic": true,
+  "no_feedback_peak_cAMP_min_uM": 0.292704422085991,
+  "no_feedback_peak_cAMP_max_uM": 0.2927058471326437,
+  "baseline_peak_cAMP_RTmin_uM": 0.27383990692874555,
+  "baseline_peak_cAMP_RTmax_uM": 0.03182600820393995,
+  "baseline_peak_PDEstar_RTmax_uM": 0.41744663153873074,
+  "baseline_peak_free_PKAc_RTmax_uM": 0.8533489889630028
+}

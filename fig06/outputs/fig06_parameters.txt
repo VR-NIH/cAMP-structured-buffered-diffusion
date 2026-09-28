@@ -1,0 +1,33 @@
+FIGURE 6 REVISED PARAMETERS AND DEFINITIONS
+==========================================
+
+Shared cAMP-binding thresholds
+K_B = 0.1 uM
+K_A = 1 uM
+K_D,eff = sqrt(K_A*K_B) = 0.316228 uM
+c_max = sqrt(K_A*K_B) = 0.316228 uM
+
+Panel A: organized RI / structured buffered diffusion
+rho_R = R_T / R_* (dimensionless)
+R_* is an illustrative reference abundance; no absolute RI concentration optimum is asserted.
+g_R(rho_R) = 4*rho_R/(1+rho_R)^2
+D_relay(c,rho_R) proportional to g_R(rho_R) * [c/(K_B+c)] * [K_A/(K_A+c)]
+Displayed surface = D_relay normalized to its own maximum.
+Surface maximum: rho_R = 1, c = sqrt(K_A*K_B).
+rho_R plotted from 0.01 to 100.
+
+Panel B: unorganized RI / conventional buffered diffusion
+K_D,eff = sqrt(K_A*K_B)
+beta = B_T / K_D,eff (dimensionless buffer abundance)
+u = c / K_D,eff
+kappa = beta/(1+u)^2
+D_buffer/D_free = 1/(1+kappa)
+beta plotted from 0.01 to 100.
+
+Interpretive constraints
+- Panel A cAMP dependence is derived from the source/acceptor occupancy closure.
+- Panel A RI-abundance dependence is explicitly phenomenological and illustrative.
+- R_* and g_R are not inferred from the Fig. 5 R_T optimum.
+- Panel B is the conventional rapid-equilibrium buffering limit.
+- The panels are limiting effective transport regimes, not parallel diffusion coefficients to be added pointwise.
+- Separate colorbars are used because normalized D_relay and D_buffer/D_free are different quantities.

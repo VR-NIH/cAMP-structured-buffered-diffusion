@@ -1,0 +1,28 @@
+Figure S1 lattice release-recapture parameter summary
+===================================================
+
+Purpose: microscopic closure check for mean-field donor-acceptor occupancy transport.
+D_occ is estimated from release-recapture jump displacement variance.
+The product term is computed independently from dwell-weighted occupancy fractions.
+Source-capable fraction = R_B + R_AB.
+Acceptor-capable fraction = R_0 + R_B.
+No analytic donor/acceptor availability function is imposed in the KMC.
+Initialization used a sequential-equilibrium draw followed by burn-in before collection.
+Self-recapture is allowed and contributes zero displacement to D_occ.
+Tested regime: fast exchange with local capture over a +/-6-site kernel.
+
+K_B = 0.1 uM; K_A = 1.0 uM; sqrt(K_A K_B) = 0.3162 uM
+Measured D_occ peak = 0.2146 uM
+k_on_B = 100.0 uM^-1 s^-1; k_off_B = 10.0 s^-1
+k_on_A = 10.0 uM^-1 s^-1; k_off_A = 10.0 s^-1
+N_sites = 180; spacing = 0.1 um
+Capture radius = +/-6 sites; kernel lambda = 2.0 sites
+Organized p_recapture = 0.35
+Sparse/unorganized p_recapture = 0.03
+Replicates per concentration = 3
+Burn-in events per replicate = 1500
+Collection events per replicate = 8000
+cAMP range = 0.001 to 15.85 uM
+One-scale product fit slope = 0.0898919 um^2 s^-1
+One-scale product comparison R^2 = 0.997102
+Scope: supports mean-field factorization of release-recapture mobility in the tested fast-exchange, local-capture regime; does not derive the continuum PDE or calibrate D_relay,0.

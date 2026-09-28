@@ -1,0 +1,7 @@
+{
+  "D_relay_0_um2_s": 50.0,
+  "baseline": {"K_B_uM": 0.1, "K_A_uM": 1.0},
+  "equal_threshold_control": {"K_B_uM": 0.1, "K_A_uM": 0.1},
+  "formula": "D_relay(c) = D_relay_0 * c/(K_B+c) * K_A/(K_A+c)",
+  "analytic_peak": "c_max = sqrt(K_A*K_B)"
+}

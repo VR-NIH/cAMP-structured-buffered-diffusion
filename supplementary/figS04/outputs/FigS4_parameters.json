@@ -1,0 +1,51 @@
+{
+  "shared": {
+    "D0_um2_s": 50.0,
+    "K_B_uM": 0.1,
+    "K_A_uM": 1.0,
+    "cmax_uM": 0.31622776601683794
+  },
+  "MM_matching": "Vmax = k_ref * (KM + cmax), so v_MM(cmax) = k_ref*cmax",
+  "KM_values_uM": [
+    0.1,
+    0.3,
+    1.0
+  ],
+  "single_pulse": {
+    "L_um": 50.0,
+    "N": 150,
+    "source_concentration_uM": 2.5,
+    "source_duration_s": 1.0,
+    "t_end_s": 8.0,
+    "k_PDE_reference_s-1": 0.1,
+    "interface_averaging": "arithmetic",
+    "post_pulse_proximal_boundary": "reflecting half-cell",
+    "distal_boundary": "reflecting half-cell",
+    "penetration_threshold_fraction": 0.1
+  },
+  "pulse_fractionation": {
+    "L_um": 20.0,
+    "N": 150,
+    "distal_s_um": 20.0,
+    "resting_cAMP_uM": 0.005,
+    "t_end_s": 12.0,
+    "I_total_uM_um": 120.0,
+    "J_in_uM_um_s": 60.0,
+    "k_PDE_reference_s-1": 1.0,
+    "pulse_numbers": [
+      1,
+      2,
+      4,
+      16
+    ],
+    "interface_averaging": "harmonic",
+    "proximal_boundary": "imposed flux half-cell",
+    "distal_boundary": "reflecting half-cell"
+  },
+  "solver": {
+    "method": "BDF",
+    "rtol": 1e-05,
+    "atol": 1e-08,
+    "max_step_s": 0.03
+  }
+}

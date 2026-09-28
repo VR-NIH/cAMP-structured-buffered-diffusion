@@ -1,0 +1,3 @@
+condition,K_B_uM,K_A_uM,c_peak_uM,D_relay_peak_um2_s
+baseline_independent_thresholds,0.1,1.0,0.31622776601683794,28.86076962755087
+equal_thresholds,0.1,0.1,0.1,12.5

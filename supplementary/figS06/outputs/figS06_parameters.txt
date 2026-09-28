@@ -1,0 +1,41 @@
+Figure S6 low-RT limiting facilitation example
+Canonical equations: same as revised Figs. 3-4
+Readout is s=20 um to match the open-star condition in revised Fig. 4.
+
+L: 20.0
+N: 100
+distal_s: 20.0
+t_end: 18.0
+resting_cAMP: 0.005
+D0: 50.0
+K_B: 0.1
+K_A: 1.0
+RT: 0.2
+rho_RC: 4.0
+k_off_A: 80.0
+k_on_A: 80.0
+k_rel: 5.0
+D_PKAc: 20.0
+k_PKAc_sink: 0.4
+PDE_T: 0.5
+k_act: 2.0
+k_inact: 0.3
+k_PDE_b: 0.1
+k_PDE_i: 3.0
+source_flux: 10.0
+pulse_duration: 1.0
+interpulse_interval: 4.0
+rtol: 2e-06
+atol: 1e-09
+max_step: 0.06
+
+Derived:
+H_T_uM: 0.05
+c_max_uM: 0.31622776601683794
+
+Numerical scheme:
+harmonic averaging for D_relay interfaces
+half-cell finite-volume correction at both boundaries
+proximal imposed flux only during pulses; reflecting otherwise
+distal reflecting boundary
+fixed H_T; no cumulative holoenzyme depletion

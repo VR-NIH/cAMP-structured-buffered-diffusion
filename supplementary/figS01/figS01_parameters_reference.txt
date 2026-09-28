@@ -1,0 +1,24 @@
+Figure S1 stochastic release-recapture lattice consistency test
+
+K_B = 0.1 uM
+K_A = 1.0 uM
+k_on_B = 100 uM^-1 s^-1
+k_off_B = 10 s^-1
+k_on_A = 10 uM^-1 s^-1
+k_off_A = 10 s^-1
+N_sites = 180
+spacing = 0.1 um
+capture radius = +/-6 sites
+capture kernel characteristic length = 2 sites
+organized recapture-attempt probability = 0.35
+sparse/unorganized recapture-attempt probability = 0.03
+burn-in events = 1500 per replicate
+collection events = 8000 per replicate
+replicates = 3 per cAMP concentration
+cAMP clamp range = 0.001 to 15.85 uM
+random seed = 71
+
+D_occ = sum((Delta s_j)^2)/(2*T*N_sites)
+Source-capable fraction = rho_RB + rho_RAB
+Acceptor-capable fraction = rho_R0 + rho_RB
+The source x acceptor product is measured independently and is not imposed in the KMC.

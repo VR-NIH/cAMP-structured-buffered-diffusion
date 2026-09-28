@@ -1,0 +1,33 @@
+Fig S2 parameter summary: threshold sensitivity of relay-mobility window
+
+Purpose
+- Test whether the relay-mobility window depends on the baseline choice of K_A and K_B.
+- Demonstrate that the window persists when effective occupancy thresholds span 10 nM to 1 uM.
+
+Model
+D_relay(c) = D0 * [c/(K_B+c)] * [K_A/(K_A+c)]
+D0 = 50.0 um^2/s
+cmax = sqrt(K_A*K_B)
+Curves in panel A are normalized to their own maximum.
+
+Concentration axis
+c range = 0.001 to 31.6 uM for computation; plotted to 10 uM.
+
+Threshold pairs in panel A, in uM
+- K_B=0.01, K_A=0.1; cmax=0.0316228 uM; peak D_relay=28.8608 um^2/s
+- K_B=0.03, K_A=0.3; cmax=0.0948683 uM; peak D_relay=28.8608 um^2/s
+- K_B=0.1, K_A=1; cmax=0.316228 uM; peak D_relay=28.8608 um^2/s
+- K_B=0.3, K_A=1; cmax=0.547723 uM; peak D_relay=20.8729 um^2/s
+- K_B=0.01, K_A=1; cmax=0.1 uM; peak D_relay=41.3223 um^2/s
+- K_B=0.1, K_A=0.1; cmax=0.1 uM; peak D_relay=12.5 um^2/s
+
+Panel B
+K_B and K_A each varied from 0.01 to 1.0 uM on a logarithmic grid.
+Heatmap shows cmax = sqrt(K_A*K_B).
+White contours show cmax = 0.03, 0.1, 0.316, and 1.0 uM.
+Black star marks the baseline pair K_B=0.1 uM, K_A=1.0 uM.
+
+Interpretation
+Changing K_A or K_B shifts the concentration range of maximal relay-associated mobility,
+but does not remove the non-monotonic source-acceptor mobility window. The existence of the
+window follows from multiplying a rising source-availability term by a falling acceptor-vacancy term.

@@ -1,0 +1,75 @@
+{
+  "figure": {
+    "figsize_inches": [
+      7.2,
+      9.0
+    ],
+    "dpi": 300,
+    "output_basename": "Fig2_relay_propagation_reflecting"
+  },
+  "mobility": {
+    "K_B_uM": 0.1,
+    "K_A_uM": 1.0,
+    "D0_um2_per_s": 50.0
+  },
+  "panels_A_D": {
+    "source_concentration_uM": 2.5,
+    "source_duration_s": 1.0,
+    "baseline_kPDE_per_s": 0.1,
+    "domain_length_um": 50.0,
+    "grid_points": 150,
+    "simulation_end_s": 8.0,
+    "evaluation_points": 600,
+    "plot_distance_max_um": 20.0,
+    "plot_time_max_s": 5.0,
+    "penetration_threshold_fraction": 0.1,
+    "PDE_sweep_min_per_s": 0.01,
+    "PDE_sweep_max_per_s": 10.0,
+    "PDE_sweep_points": 24,
+    "profile_times_s": [
+      0.5,
+      1.0,
+      2.0,
+      4.0
+    ],
+    "mobility_trace_positions_um": [
+      2.0,
+      5.0,
+      10.0,
+      15.0
+    ],
+    "interface_averaging": "arithmetic",
+    "boundary_protocol": "proximal Dirichlet clamp to source concentration during 0-1 s; after source removal, proximal zero-flux reflecting boundary with half-cell correction; distal zero-flux reflecting boundary with half-cell correction throughout",
+    "post_pulse_boundary": "reflecting_zero_flux",
+    "penetration_threshold_method": "10% of overall peak; crossing linearly interpolated between adjacent spatial nodes; domain-limited cases recorded as NaN/excluded from scaling",
+    "constant_mobility_control": "D_const = D_relay(c_max), protocol matched to A-D clearance sweep"
+  },
+  "panels_E_F": {
+    "domain_length_um": 20.0,
+    "grid_points": 150,
+    "distal_position_um": 20.0,
+    "resting_cAMP_uM": 0.005,
+    "simulation_end_s": 12.0,
+    "total_integrated_input_uM_um": 120.0,
+    "kPDE_per_s": 1.0,
+    "pulse_numbers": [
+      1,
+      2,
+      4,
+      16
+    ],
+    "fixed_input_flux_uM_um_per_s": 60.0,
+    "first_pulse_window_start_s": 0.2,
+    "pulse_schedule_window_end_s": 10.0,
+    "minimum_pulse_duration_s": 0.02,
+    "interface_averaging": "harmonic",
+    "boundary_protocol": "proximal imposed flux with half-cell boundary correction; distal no-flux with half-cell boundary correction",
+    "resting_cAMP_note": "5 nM baseline used for the revised Fig. 2 E-F output; change this field to 0.025 to reproduce the earlier 25 nM variant."
+  },
+  "solver": {
+    "method": "BDF",
+    "rtol": 1e-05,
+    "atol": 1e-08,
+    "max_step_s": 0.03
+  }
+}

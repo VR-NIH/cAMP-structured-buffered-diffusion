@@ -1,0 +1,29 @@
+{
+  "K_B_uM": 0.1,
+  "K_A_uM": 1.0,
+  "K_D_eff_uM": 0.31622776601683794,
+  "cAMP_range_uM": [
+    0.01,
+    10.0
+  ],
+  "rho_R_range": [
+    0.01,
+    100.0
+  ],
+  "beta_range": [
+    0.01,
+    100.0
+  ],
+  "organized_architecture_factor": "g_R(rho)=4*rho/(1+rho)^2",
+  "organized_surface": "Drelay_norm = normalize[g_R(rho_R) * c/(K_B+c) * K_A/(K_A+c)]",
+  "conventional_surface": "kappa=beta/(1+c/K_D_eff)^2; Dbuffer/Dfree=1/(1+kappa)",
+  "organized_surface_maximum": {
+    "c_uM": 0.31622776601683794,
+    "rho_R": 1.0
+  },
+  "interpretation": {
+    "rho_R": "R_T/R_*; R_* is an illustrative reference abundance and is not inferred from Fig. 5",
+    "beta": "B_T/K_D_eff; dimensionless buffer abundance in the conventional rapid-equilibrium limit",
+    "colorbars": "separate scales; panels are limiting regimes and are not added pointwise"
+  }
+}

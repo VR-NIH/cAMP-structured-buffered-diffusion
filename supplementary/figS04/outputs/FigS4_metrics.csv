@@ -1,0 +1,21 @@
+kind,label,mode,KM_uM,penetration_depth_um,pulse_number,relay_exposure_um2,pulse_duration_s
+single,First-order,linear,,16.840983904658927,,,
+single,MM $K_M$=0.1 $\mu$M,mm,0.1,17.485106518678563,,,
+single,MM $K_M$=0.3 $\mu$M,mm,0.3,17.47986832777451,,,
+single,MM $K_M$=1 $\mu$M,mm,1.0,17.28203433517255,,,
+pulse,First-order,linear,,,1.0,124.10335478495423,2.0
+pulse,First-order,linear,,,2.0,166.80644531613922,1.0
+pulse,First-order,linear,,,4.0,196.4183454230896,0.5
+pulse,First-order,linear,,,16.0,203.10466759633277,0.125
+pulse,MM $K_M$=0.1 $\mu$M,mm,0.1,,1.0,233.9326632161491,2.0
+pulse,MM $K_M$=0.1 $\mu$M,mm,0.1,,2.0,267.05199820606055,1.0
+pulse,MM $K_M$=0.1 $\mu$M,mm,0.1,,4.0,269.71767348982587,0.5
+pulse,MM $K_M$=0.1 $\mu$M,mm,0.1,,16.0,246.16088594598574,0.125
+pulse,MM $K_M$=0.3 $\mu$M,mm,0.3,,1.0,268.61375060724697,2.0
+pulse,MM $K_M$=0.3 $\mu$M,mm,0.3,,2.0,289.020859633502,1.0
+pulse,MM $K_M$=0.3 $\mu$M,mm,0.3,,4.0,284.36417554128377,0.5
+pulse,MM $K_M$=0.3 $\mu$M,mm,0.3,,16.0,262.1073199228488,0.125
+pulse,MM $K_M$=1 $\mu$M,mm,1.0,,1.0,254.9590867360985,2.0
+pulse,MM $K_M$=1 $\mu$M,mm,1.0,,2.0,276.08008134330663,1.0
+pulse,MM $K_M$=1 $\mu$M,mm,1.0,,4.0,271.6742847157875,0.5
+pulse,MM $K_M$=1 $\mu$M,mm,1.0,,16.0,252.67443787748792,0.125

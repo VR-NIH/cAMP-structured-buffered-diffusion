@@ -1,0 +1,70 @@
+{
+  "description": "Canonical Fig. 7 organized-versus-unorganized RI comparison driven by the same localized active-adenylyl-cyclase disk source.",
+  "geometry": {
+    "domain_um": 50.0,
+    "source_radius_um": 0.1,
+    "common_coupling_distance_um": 0.02,
+    "n_nodes_organized": 501,
+    "n_nodes_unorganized": 501
+  },
+  "time": {
+    "t_end_s": 15.0,
+    "stimulus_start_s": 0.0,
+    "stimulus_duration_s": 1.0,
+    "early_dt_s": 0.0025,
+    "late_n_points": 1801,
+    "figure_display_tmax_s": 12.5,
+    "kymograph_display_tmax_s": 6.0,
+    "supplement_display_tmax_s": 12.5
+  },
+  "cAMP": {
+    "rest_uM": 0.025,
+    "D_free_um2_per_s": 100.0,
+    "k_clear_per_s": 0.1
+  },
+  "RI": {
+    "RT_uM": 5.0,
+    "KB_uM": 0.1,
+    "KA_uM": 1.0,
+    "D_relay_0_um2_per_s": 50.0,
+    "rho_R_to_C": 4.0
+  },
+  "activation": {
+    "kon_A_per_uM_s": 10.0,
+    "koff_A_per_s": 10.0,
+    "k_rel_per_s": 5.0
+  },
+  "numerics": {
+    "method": "BDF",
+    "rtol": 3e-07,
+    "atol": 1e-10,
+    "max_step_s": 0.01
+  },
+  "readout": {
+    "distances_um": [
+      1.0,
+      5.0,
+      10.0,
+      20.0
+    ],
+    "fit_organized_attenuation": true,
+    "fit_organized_latency_vs_x2": true
+  },
+  "notes": [
+    "Resting free cAMP is 25 nM in both conditions.",
+    "The common source is a 0.1-um-radius membrane disk containing 50 active AC molecules, each producing 100 cAMP molecules/s, for a total source rate of 5000 cAMP molecules/s.",
+    "The script derives the uniform disk flux density from AC production and source area rather than imposing a source concentration.",
+    "With D_free = 100 um^2/s, the AC source produces a source-surface free-cAMP concentration near 0.289 uM and a common input near 0.242 uM at 20 nm from the source.",
+    "The identical 20-nm proximal waveform drives both downstream transport formulations for 1 s and returns to the common 25-nM background afterward.",
+    "Downstream transport is the controlled difference: radially symmetric 3D conventional buffered diffusion versus reduced structured-buffered mobility D_relay(c).",
+    "PDE-mediated clearance acts on the evoked component, -k_clear*(c-c_rest), preserving the common resting background.",
+    "Local PKAc release is non-depleting: R_PKAc = k_rel*f_AB^2*H_T, H_T = RT/rho_R_to_C.",
+    "The apparent attenuation length and latency-vs-distance-squared fit are descriptive summaries, not fundamental constants."
+  ],
+  "source_biology": {
+    "active_AC_count": 50,
+    "turnover_cAMP_per_AC_per_s": 100.0,
+    "total_cAMP_production_molecules_per_s": 5000.0,
+    "conversion_molecules_per_uM_um3": 602.214076
+  }
+}

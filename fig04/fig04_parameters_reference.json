@@ -1,0 +1,48 @@
+{
+  "L": 20.0,
+  "N": 100,
+  "distal_s": 20.0,
+  "t_end": 18.0,
+  "resting_cAMP": 0.005,
+  "D0": 50.0,
+  "K_B": 0.1,
+  "K_A": 1.0,
+  "RT": 1.0,
+  "rho_RC": 4.0,
+  "k_on_A": 10.0,
+  "k_off_A": 10.0,
+  "k_rel": 5.0,
+  "D_PKAc": 20.0,
+  "k_PKAc_sink": 0.4,
+  "PDE_T": 0.5,
+  "k_act": 2.0,
+  "k_inact": 0.3,
+  "k_PDE_b": 0.1,
+  "k_PDE_i": 3.0,
+  "source_flux": 10.0,
+  "pulse_duration": 1.0,
+  "interpulse_interval": 4.0,
+  "rtol": 2e-06,
+  "atol": 1e-09,
+  "max_step": 0.06,
+  "NGRID": 16,
+  "RT_range_uM": [
+    0.1,
+    19.952623149688797
+  ],
+  "IPI_range_s": [
+    3.0,
+    10.0
+  ],
+  "k_PDE_i_range_uM^-1_s^-1": [
+    0.1,
+    10.0
+  ],
+  "k_off_A_range_s^-1": [
+    0.1,
+    100.0
+  ],
+  "low_output_mask_fraction_of_baseline_P1_peak": 0.01,
+  "baseline_peak_P2_P1": 0.22639071201930822,
+  "low_RT_enhancement_peak_P2_P1": 1.095539642804378
+}

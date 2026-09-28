@@ -1,0 +1,16 @@
+Figure S2 threshold sensitivity of the occupancy-dependent mobility window
+
+D_relay(c) = D_relay,0 * [c/(K_B+c)] * [K_A/(K_A+c)]
+D_relay,0 = 50 um^2/s
+c_max = sqrt(K_A*K_B)
+
+Panel A threshold pairs (uM):
+K_B=0.01, K_A=0.10
+K_B=0.03, K_A=0.30
+K_B=0.10, K_A=1.00  (reference)
+K_B=0.30, K_A=1.00
+K_B=0.01, K_A=1.00
+K_B=0.10, K_A=0.10  (equal-threshold control)
+
+Panel A curves are normalized to their own maximum.
+Panel B varies K_B and K_A independently from 0.01 to 1.0 uM on a logarithmic grid.

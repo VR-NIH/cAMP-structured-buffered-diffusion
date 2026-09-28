@@ -1,0 +1,18 @@
+FIGURE S4 CORRECTED PDE-SINK SENSITIVITY
+========================================
+
+All transport/numerical settings inherit final Fig. 2; only PDE sink form changes.
+cmax = 0.316227766 uM
+MM matching: Vmax = k_ref*(KM+cmax)
+
+Single-pulse penetration depths:
+  First-order: 16.841 um
+  MM $K_M$=0.1 $\mu$M: 17.4851 um
+  MM $K_M$=0.3 $\mu$M: 17.4799 um
+  MM $K_M$=1 $\mu$M: 17.282 um
+
+Equal-input distal mobility exposure E_relay (um^2):
+  First-order: N=1: 124.103, N=2: 166.806, N=4: 196.418, N=16: 203.105
+  MM $K_M$=0.1 $\mu$M: N=1: 233.933, N=2: 267.052, N=4: 269.718, N=16: 246.161
+  MM $K_M$=0.3 $\mu$M: N=1: 268.614, N=2: 289.021, N=4: 284.364, N=16: 262.107
+  MM $K_M$=1 $\mu$M: N=1: 254.959, N=2: 276.08, N=4: 271.674, N=16: 252.674

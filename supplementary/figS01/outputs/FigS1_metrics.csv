@@ -1,0 +1,12 @@
+metric,value,units
+K_B,0.1,uM
+K_A,1.0,uM
+mean_field_cmax,0.3162,uM
+measured_D_occ_peak_cAMP,0.2146,uM
+one_scale_fit_slope,0.0898919,um2_per_s
+one_scale_fit_R2,0.997102,dimensionless
+organized_recapture_attempt_probability,0.35,dimensionless
+sparse_recapture_attempt_probability,0.03,dimensionless
+replicates_per_concentration,3,count
+burn_in_events,1500,events_per_replicate
+collection_events,8000,events_per_replicate

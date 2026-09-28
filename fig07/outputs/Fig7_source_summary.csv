@@ -1,0 +1,2 @@
+active_AC_count,turnover_cAMP_per_AC_per_s,total_cAMP_production_molecules_per_s,source_radius_um,source_flux_density_uM_um_per_s,rest_cAMP_uM,source_surface_cAMP_uM,coupling_distance_um,common_input_cAMP_uM
+50,100.0,5000.0,0.1,264.2830007379226,0.025,0.2892830007379226,0.02,0.2416602354271202
