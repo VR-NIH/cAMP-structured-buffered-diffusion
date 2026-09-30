@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reproducible Fig. 7 organized-vs-unorganized RI capstone simulation.
+"""Reproducible Fig. 6 organized-vs-unorganized RI capstone simulation.
 
 This revision uses a *single biologically parameterized AC source* for both
 transport formulations. A finite membrane-associated disk containing active
@@ -13,15 +13,15 @@ Thus AC production, source geometry, resting cAMP, RI abundance, clearance,
 activation kinetics, and local non-depleting PKAc readout are identical. The
 downstream transport formulation is the controlled difference.
 
-Outputs written beside the parameter file:
-  Fig7_final_main.png/.pdf
-  FigS7_traces_log.png/.pdf
-  Fig7_metrics.csv
-  Fig7_traces.csv
-  Fig7_fields.npz
+Outputs written to the outputs/ subdirectory:
+  Fig6_final_main.png/.pdf
+  Fig6_diagnostic_traces_log.png/.pdf
+  Fig6_metrics.csv
+  Fig6_traces.csv
+  Fig6_fields.npz
 
 Run:
-    python Fig7_simulation.py Fig7_parameters.json
+    python fig06_simulation.py fig06_parameters.json
 """
 
 from __future__ import annotations
@@ -36,6 +36,11 @@ from scipy.integrate import solve_ivp
 from scipy.stats import linregress
 from scipy.sparse import lil_matrix
 import matplotlib.pyplot as plt
+
+
+HERE = Path(__file__).resolve().parent
+OUT = HERE / "outputs"
+OUT.mkdir(parents=True, exist_ok=True)
 
 
 def load_params(path: Path) -> dict:
@@ -387,13 +392,13 @@ def render_main(p: dict, unorg: dict, org: dict, metrics: pd.DataFrame, out: Pat
     axB = fig.add_subplot(gs[1, 0:3])
     axC = fig.add_subplot(gs[1, 3:6])
 
-    for ax, b, letter, title, ylabel, mt, mx in [
-        (axB, unorg, "B", "Unorganized RI", "Radial distance from source (µm)", mask_u_t, mask_u_x),
-        (axC, org, "C", "Organized RI", r"Organized path length, $s$ (µm)", mask_o_t, mask_o_x),
+    for ax, b, letter, title, mt, mx in [
+        (axB, unorg, "B", "Unorganized RI", mask_u_t, mask_u_x),
+        (axC, org, "C", "Organized RI", mask_o_t, mask_o_x),
     ]:
         Z = np.maximum(b["evoked"][np.ix_(mx, mt)], 0.0)
         im = ax.pcolormesh(b["t"][mt], b["x"][mx], Z, shading="auto", vmin=0.0, vmax=vmax, cmap="magma")
-        ax.set(xlabel="Time (s)", ylabel=ylabel, title=title,
+        ax.set(xlabel="Time (s)", ylabel="Distance from source (µm)", title=title,
                xlim=(0, display_tmax), ylim=(0, xlim))
         ax.text(-0.13, 1.05, letter, transform=ax.transAxes, fontweight="bold", fontsize=12)
         ax.plot([0, 1], [20.8, 20.8], lw=3, clip_on=False)
@@ -407,7 +412,7 @@ def render_main(p: dict, unorg: dict, org: dict, metrics: pd.DataFrame, out: Pat
         dd = metrics[metrics.branch == name]
         axD.plot(dd.distance_um, dd.peak_evoked_PKAc_release_uM_per_s, marker=marker, label=name)
     axD.set_yscale("log")
-    axD.set(xlabel="Downstream coordinate (µm)", ylabel="Peak evoked local PKAc release\n(µM s$^{-1}$)")
+    axD.set(xlabel="Distance from source (µm)", ylabel="Peak evoked local PKAc release\n(µM s$^{-1}$)")
     axD.text(0.0, 1.06, "D", transform=axD.transAxes, fontweight="bold", fontsize=12)
 
     do = metrics[metrics.branch == "Organized RI"].sort_values("distance_um")
@@ -424,7 +429,7 @@ def render_main(p: dict, unorg: dict, org: dict, metrics: pd.DataFrame, out: Pat
     axE.plot(x2, tp, "o")
     xx2 = np.linspace(0, max(x2) * 1.03, 150)
     axE.plot(xx2, in2 + sl2 * xx2, ls="--")
-    axE.set(xlabel=r"Path length squared, $s^2$ (µm$^2$)", ylabel="Time to peak local PKAc release (s)")
+    axE.set(xlabel="Distance² (µm²)", ylabel="Time to peak local PKAc release (s)")
     axE.text(0.0, 1.06, "E", transform=axE.transAxes, fontweight="bold", fontsize=12)
     axE.text(0.05, 0.9, f"R² = {r_lat*r_lat:.3f}", transform=axE.transAxes)
 
@@ -458,9 +463,9 @@ def render_supplement(p: dict, unorg: dict, org: dict, out: Path):
 
 
 def main():
-    param_path = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).with_name("Fig7_parameters.json")
+    param_path = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "fig06_parameters.json"
     p = load_params(param_path)
-    outdir = param_path.parent
+    outdir = OUT
     t_eval = make_time_grid(p)
     c_input = common_source_input(p)
     Jsrc = source_flux_density(p)
@@ -478,7 +483,7 @@ def main():
         "source_surface_cAMP_uM": c_surface,
         "coupling_distance_um": p["geometry"]["common_coupling_distance_um"],
         "common_input_cAMP_uM": c_input,
-    }]).to_csv(outdir / "Fig7_source_summary.csv", index=False)
+    }]).to_csv(outdir / "Fig6_source_summary.csv", index=False)
 
     print(f"AC source: {sb['active_AC_count']} x {sb['turnover_cAMP_per_AC_per_s']:.1f} cAMP/s = {qsrc:.0f} molecules/s", flush=True)
     print(f"Derived disk flux density: {Jsrc:.6f} µM·µm/s", flush=True)
@@ -491,11 +496,11 @@ def main():
 
     distances = [float(v) for v in p["readout"]["distances_um"]]
     metrics = pd.DataFrame(summarize(unorg, distances) + summarize(org, distances))
-    metrics.to_csv(outdir / "Fig7_metrics.csv", index=False)
+    metrics.to_csv(outdir / "Fig6_metrics.csv", index=False)
 
-    export_traces([unorg, org], distances, outdir / "Fig7_traces.csv")
+    export_traces([unorg, org], distances, outdir / "Fig6_traces.csv")
     np.savez_compressed(
-        outdir / "Fig7_fields.npz",
+        outdir / "Fig6_fields.npz",
         t_unorganized=unorg["t"], x_unorganized=unorg["x"], c_unorganized=unorg["c"], evoked_unorganized=unorg["evoked"],
         t_organized=org["t"], x_organized=org["x"], c_organized=org["c"], evoked_organized=org["evoked"],
         common_input_uM=np.array([c_input]),
@@ -505,9 +510,9 @@ def main():
     )
 
     lam, r2att, sl2, in2, r2lat = render_main(
-        p, unorg, org, metrics, outdir / "Fig7_final_main"
+        p, unorg, org, metrics, outdir / "Fig6_final_main"
     )
-    render_supplement(p, unorg, org, outdir / "FigS7_traces_log")
+    render_supplement(p, unorg, org, outdir / "Fig6_diagnostic_traces_log")
 
     print(metrics.to_string(index=False))
     print(f"\nOrganized apparent attenuation length: {lam:.3f} µm (log-linear R²={r2att:.4f})")

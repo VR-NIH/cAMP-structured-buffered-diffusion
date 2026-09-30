@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generate Table 1: strong-input organized-versus-radial transport comparison.
 
-The calculation uses the Figure 7 geometry, 1-s stimulus, cAMP clearance,
+The calculation uses the Figure 6 geometry, 1-s stimulus, cAMP clearance,
 RI activation, and local non-depleting PKAc readout. The proximal free-cAMP
 concentration during the pulse is set to 2.5 uM for all three branches:
 
@@ -31,13 +31,13 @@ import numpy as np
 import pandas as pd
 
 HERE = Path(__file__).resolve().parent
-FIG7_DIR = HERE.parent / "fig07"
-if str(FIG7_DIR) not in sys.path:
-    sys.path.insert(0, str(FIG7_DIR))
+FIG6_DIR = HERE.parent / "fig06"
+if str(FIG6_DIR) not in sys.path:
+    sys.path.insert(0, str(FIG6_DIR))
 
-import fig07_simulation as f7
+import fig06_simulation as f6
 
-PARAMS = FIG7_DIR / "fig07_parameters.json"
+PARAMS = FIG6_DIR / "fig06_parameters.json"
 OUT = HERE / "outputs"
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -47,7 +47,7 @@ TARGET_UM = 20.0
 
 def simulate_radial_no_buffer(p: dict, t_eval: np.ndarray, c_input: float) -> dict:
     """Radial 3D branch with D_free and no rapid-equilibrium buffer retardation."""
-    S, _, f_ss = f7.common_functions(p)
+    S, _, f_ss = f6.common_functions(p)
 
     a = p["geometry"]["source_radius_um"]
     zc = p["geometry"]["common_coupling_distance_um"]
@@ -71,7 +71,7 @@ def simulate_radial_no_buffer(p: dict, t_eval: np.ndarray, c_input: float) -> di
     R_rest = k_rel * f0 * f0 * HT
     M = N - 1
 
-    # Spherical finite-volume geometry, matching the conventional Fig. 7 branch.
+    # Spherical finite-volume geometry, matching the conventional Fig. 6 branch.
     r_face = 0.5 * (r[:-1] + r[1:])
     inner = r_face
     outer = np.r_[r_face[1:], r[-1]]
@@ -93,7 +93,7 @@ def simulate_radial_no_buffer(p: dict, t_eval: np.ndarray, c_input: float) -> di
         df = kon * c * S(c) * (1.0 - f) - koff * f
         return np.r_[dc, df]
 
-    t, c, f = f7.integrate_fixed_boundary(
+    t, c, f = f6.integrate_fixed_boundary(
         p, t_eval, rhs, N, c_input, c_rest, f0
     )
     release = k_rel * f * f * HT
@@ -112,7 +112,7 @@ def simulate_radial_no_buffer(p: dict, t_eval: np.ndarray, c_input: float) -> di
 
 
 def source_equivalent(p: dict, c_input: float) -> dict:
-    """Equivalent disk-source quantities under the Figure 7 calibration."""
+    """Equivalent disk-source quantities under the Figure 6 calibration."""
     c_rest = p["cAMP"]["rest_uM"]
     D_free = p["cAMP"]["D_free_um2_per_s"]
     a = p["geometry"]["source_radius_um"]
@@ -140,7 +140,7 @@ def branch_summary(p: dict, b: dict, condition: str) -> tuple[dict, dict]:
     RT = p["RI"]["RT_uM"]
     KD = np.sqrt(KA * KB)
 
-    i20 = f7.nearest_index(b["x"], TARGET_UM)
+    i20 = f6.nearest_index(b["x"], TARGET_UM)
     c20 = b["c"][i20]
     release20 = b["release"][i20]
     j_c = int(np.argmax(c20))
@@ -191,12 +191,12 @@ def main() -> None:
     with PARAMS.open("r", encoding="utf-8") as fh:
         p = json.load(fh)
 
-    t_eval = f7.make_time_grid(p)
+    t_eval = f6.make_time_grid(p)
     c_input = PROXIMAL_INPUT_UM
 
-    conventional = f7.simulate_unorganized(p, t_eval, c_input)
+    conventional = f6.simulate_unorganized(p, t_eval, c_input)
     no_buffer = simulate_radial_no_buffer(p, t_eval, c_input)
-    organized = f7.simulate_organized(p, t_eval, c_input)
+    organized = f6.simulate_organized(p, t_eval, c_input)
 
     branches = [
         (conventional, "conventional_buffered_radial"),

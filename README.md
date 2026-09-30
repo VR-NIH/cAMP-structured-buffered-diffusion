@@ -11,8 +11,7 @@ buffered diffusion and cAMP signaling.
 - `fig03/` — Figure 3 PKAc-dependent PDE feedback simulations
 - `fig04/` — Figure 4 parameter-sweep calculations
 - `fig05/` — Figure 5 RI-abundance scan
-- `fig06/` — Figure 6 organized versus conventional buffered-diffusion limits
-- `fig07/` — Figure 7 organized versus unorganized RI transport comparison
+- `fig06/` — Figure 6 common-source comparison of organized and unorganized RI transport
 - `supplementary/` — supplementary-figure simulations and analyses
 
 Individual figure directories contain the corresponding simulation or analysis
@@ -36,3 +35,4 @@ To install the required packages:
 
 ```bash
 python -m pip install -r requirements.txt
+```

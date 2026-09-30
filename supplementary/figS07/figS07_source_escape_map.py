@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Figure S7: source-amplitude x lateral-escape sensitivity for the Fig. 7 organized path.
+"""Figure S7: source-amplitude x lateral-escape sensitivity for the Fig. 6 organized path.
 
-Every grid point is a full organized-path simulation using the reference Fig. 7
+Every grid point is a full organized-path simulation using the reference Fig. 6
 spatial grid, 15-s observation window, activation kinetics, resting cAMP,
 structured mobility, and fixed PDE-mediated clearance. The only swept variables are:
   1) the imposed proximal free-cAMP concentration during the 1-s source event; and
@@ -32,16 +32,16 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
 HERE = Path(__file__).resolve().parent
-FIG7_DIR = HERE.parent / "fig07"
-if str(FIG7_DIR) not in sys.path:
-    sys.path.insert(0, str(FIG7_DIR))
+FIG6_DIR = HERE.parent / "fig06_sensitivity_analysis"
+if str(FIG6_DIR) not in sys.path:
+    sys.path.insert(0, str(FIG6_DIR))
 
-import fig07_simulation as f7
-from fig07_escape_sensitivity import simulate_organized_escape
+import fig06_simulation as f6
+from fig06_escape_sensitivity import simulate_organized_escape
 
 OUT = HERE / "outputs"
 OUT.mkdir(parents=True, exist_ok=True)
-PARAMS = FIG7_DIR / "fig07_parameters.json"
+PARAMS = FIG6_DIR / "fig06_parameters.json"
 TARGET_UM = 20.0
 N_JOBS = 1
 
@@ -69,7 +69,7 @@ def escape_plot_coordinate(k, kmin_positive):
 
 def run_point(p, t_eval, input_uM, k_escape):
     b = simulate_organized_escape(p, t_eval, float(input_uM), float(k_escape))
-    i = f7.nearest_index(b["x"], TARGET_UM)
+    i = f6.nearest_index(b["x"], TARGET_UM)
     ev = b["evoked"][i]
     j = int(np.argmax(ev))
     peak_c = float(np.max(b["c"][i]))
@@ -103,13 +103,13 @@ def main():
     with PARAMS.open("r", encoding="utf-8") as fh:
         p = json.load(fh)
 
-    # Keep the reference Fig. 7 15-s window. Peaks across this sweep are checked
+    # Keep the reference Fig. 6 15-s window. Peaks across this sweep are checked
     # explicitly below to ensure none occurs at the observation boundary.
-    t_eval = f7.make_time_grid(p)
-    ref_input = float(f7.common_source_input(p))
+    t_eval = f6.make_time_grid(p)
+    ref_input = float(f6.common_source_input(p))
 
     # Proximal total free-cAMP concentration during the 1-s source event.
-    # A logarithmic base grid is augmented with the exact Fig. 7 reference input
+    # A logarithmic base grid is augmented with the exact Fig. 6 reference input
     # and the 500- and 1000-nM representative conditions.
     base_inputs = np.logspace(np.log10(0.05), np.log10(1.0), 8)
     inputs = unique_sorted(np.r_[base_inputs, ref_input, 0.5, 1.0])

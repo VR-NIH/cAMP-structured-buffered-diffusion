@@ -1,80 +1,105 @@
-# Figure 6 - Organized versus conventional buffered transport limits
+# Figure 6 - Common-source comparison of organized and unorganized RI transport
 
-This directory generates Figure 6, a two-panel comparison of effective cAMP transport in organized RI and conventional unorganized buffering limits.
+This directory contains the canonical Figure 6 comparison between structured-buffered transport in organized RI and conventional buffered diffusion in unorganized RI. Both branches are driven by the same biologically parameterized adenylyl-cyclase source so that downstream transport formulation is the controlled difference.
 
 ## Files
 
-- `fig06_simulation.py` - canonical figure-generation script.
-- `fig06_parameters_reference.json` - reference parameter summary for the plotted surfaces.
-- `outputs/` - generated figure files and parameter/summary records.
+- `fig06_simulation.py` - canonical simulation and figure-generation script.
+- `fig06_parameters.json` - canonical source, transport, activation, numerical, and readout parameters.
+- `outputs/Fig6_convergence.csv` - spatial-resolution convergence audit for `N = 251, 501, 1001, 2001`.
+- `outputs/` - generated figures and numerical outputs.
 
-## Model summary
+## Common source
 
-### Panel A: organized RI
+The source is a membrane-associated disk of radius `0.1 um` containing 50 active AC molecules. Each active AC produces 100 cAMP molecules/s, giving a total source rate of 5000 cAMP molecules/s. The script derives the disk flux density and the proximal free-cAMP concentration rather than imposing a source concentration directly.
 
-The organized transport surface combines the cAMP occupancy term
+Canonical values are:
 
-`[c/(K_B + c)] [K_A/(K_A + c)]`
+- resting free cAMP: `0.025 uM`
+- free-cAMP diffusion coefficient: `100 um^2/s`
+- source duration: `1 s`
+- coupling distance: `0.02 um` (20 nm)
+- derived source-surface cAMP: approximately `0.289 uM`
+- derived common proximal input at 20 nm: approximately `0.242 uM`
 
-with an illustrative architecture factor
+The same proximal concentration waveform drives both transport branches.
 
-`g_R(rho_R) = 4 rho_R / (1 + rho_R)^2`,
+## Transport branches
 
-where `rho_R = R_T/R_*` is a dimensionless relative RI abundance. The displayed surface is normalized to its own maximum. `R_*` is an illustrative reference abundance; no absolute RI concentration optimum is inferred from Figure 5.
+### Organized RI
 
-With `K_B = 0.1 uM` and `K_A = 1.0 uM`, the cAMP-dependent maximum occurs at
+The organized branch uses the reduced structured-buffered coordinate with
 
-`c = sqrt(K_A K_B) = 0.3162 uM`,
+`D_relay(c) = D_relay,0 [c/(K_B+c)] [K_A/(K_A+c)]`,
 
-and the architecture factor is maximal at `rho_R = 1`.
+with `D_relay,0 = 50 um^2/s`, `K_B = 0.1 uM`, and `K_A = 1.0 uM`.
 
-### Panel B: conventional buffered diffusion
+### Unorganized RI
 
-The conventional panel uses the rapid-equilibrium immobile-buffer limit with
+The unorganized branch uses radially symmetric three-dimensional finite-volume diffusion with rapid-equilibrium immobile buffering. The conventional effective buffer affinity is
 
-`K_D,eff = sqrt(K_A K_B) = 0.3162 uM`,
+`K_D = sqrt(K_A K_B)`.
 
-`beta = B_T/K_D,eff`,
+The buffer-capacity factor is
 
-`kappa = beta/(1 + c/K_D,eff)^2`,
+`kappa(c) = R_T K_D/(K_D+c)^2`,
 
-and
+and divides the complete local diffusion-plus-clearance balance.
 
-`D_buffer/D_free = 1/(1 + kappa)`.
+## Shared biological parameters
 
-The two panels represent different limiting effective transport regimes. Their colorbars have separate meanings and the two surfaces are not added pointwise.
+- total RI concentration, `R_T = 5.0 uM`
+- regulatory-to-output scaling ratio, `rho_R:C = 4`
+- A-site association rate, `k_on,A = 10 uM^-1 s^-1`
+- A-site dissociation rate, `k_off,A = 10 s^-1`
+- local PKAc release rate constant, `k_rel = 5 s^-1`
+- cAMP clearance rate, `k_clear = 0.1 s^-1`
 
-## Plot ranges
+Local PKAc release is a non-depleting readout in Figure 6.
 
-- cAMP: `0.01-10 uM`
-- Relative organized RI abundance, `rho_R`: `0.01-100`
-- Conventional dimensionless buffer abundance, `beta`: `0.01-100`
-- Each plotted axis uses 320 logarithmically spaced points.
+## Numerical settings
+
+Both canonical branches use 501 spatial nodes. The organized source-distance coordinate spans `0.02-50 um`. The unorganized branch uses the same source-distance interval, corresponding to a spherical radial coordinate of `0.12-50.10 um` after adding the `0.1-um` source radius.
+
+Integration uses SciPy BDF with:
+
+- `rtol = 3e-7`
+- `atol = 1e-10`
+- `max_step = 0.01 s`
+
+Readouts are evaluated at 1, 5, 10, and 20 um from the source.
+
+## Spatial convergence
+
+`outputs/Fig6_convergence.csv` compares 251, 501, 1001, and 2001 nodes. Relative to 2001 nodes, the canonical 501-node calculation changes the organized 20-um peak evoked PKAc release by approximately 0.10%, leaves its peak time unchanged, and changes the organized attenuation length by approximately 0.14%. The unorganized 20-um peak evoked PKAc release differs by approximately 4.74%.
+
+The convergence CSV is a retained numerical audit and is not regenerated by the main Figure 6 script.
 
 ## Run
 
 From the repository root:
 
 ```bash
-python fig06/fig06_simulation.py
+python fig06/fig06_simulation.py fig06/fig06_parameters.json
 ```
 
 or from this directory:
 
 ```bash
-python fig06_simulation.py
+python fig06_simulation.py fig06_parameters.json
 ```
 
-Required Python packages are `numpy` and `matplotlib`.
+Required Python packages are `numpy`, `pandas`, `scipy`, and `matplotlib`.
 
 ## Outputs
 
-The script writes the following files to `outputs/`:
+The main script writes generated files to `outputs/`:
 
-- `fig06.pdf`
-- `fig06.png`
-- `fig06_parameters.json`
-- `fig06_parameters.txt`
-- `fig06_summary.txt`
+- `Fig6_final_main.pdf` and `Fig6_final_main.png`
+- `Fig6_diagnostic_traces_log.pdf` and `Fig6_diagnostic_traces_log.png`
+- `Fig6_metrics.csv`
+- `Fig6_traces.csv`
+- `Fig6_fields.npz`
+- `Fig6_source_summary.csv`
 
-The canonical script contains the final two-panel layout, including wrapped y-axis labels and explicit inter-panel spacing. No separate layout-fix script is required.
+`Fig6_fields.npz` is the full-field numerical archive and is substantially larger than the figure and summary files.

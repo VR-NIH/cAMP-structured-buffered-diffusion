@@ -1,150 +1,524 @@
+#!/usr/bin/env python3
+"""Reproducible Fig. 6 organized-vs-unorganized RI capstone simulation.
+
+This revision uses a *single biologically parameterized AC source* for both
+transport formulations. A finite membrane-associated disk containing active
+adenylyl cyclases defines the free-cAMP concentration sampled 20 nm from the source. That same proximal
+waveform is imposed on:
+
+  1) Unorganized RI: radially symmetric 3D conventional buffered diffusion.
+  2) Organized RI: the reduced structured-buffered transport coordinate.
+
+Thus AC production, source geometry, resting cAMP, RI abundance, clearance,
+activation kinetics, and local non-depleting PKAc readout are identical. The
+downstream transport formulation is the controlled difference.
+
+Outputs written to the outputs/ subdirectory:
+  Fig6_final_main.png/.pdf
+  Fig6_diagnostic_traces_log.png/.pdf
+  Fig6_metrics.csv
+  Fig6_traces.csv
+  Fig6_fields.npz
+
+Run:
+    python fig06_simulation.py fig06_parameters.json
+"""
+
+from __future__ import annotations
+
 import json
-import numpy as np
-import matplotlib.pyplot as plt
+import sys
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
+from scipy.integrate import solve_ivp
+from scipy.stats import linregress
+from scipy.sparse import lil_matrix
+import matplotlib.pyplot as plt
+
+
 HERE = Path(__file__).resolve().parent
-OUT = HERE / 'outputs'
+OUT = HERE / "outputs"
 OUT.mkdir(parents=True, exist_ok=True)
 
-# Binding thresholds shared by the organized and conventional limits.
-K_B = 0.1   # uM
-K_A = 1.0   # uM
-K_D_EFF = np.sqrt(K_A * K_B)  # uM
 
-# Plot grids.
-c = np.logspace(-2, 1, 320)          # uM
-rho_R = np.logspace(-2, 2, 320)      # R_T / R_* (dimensionless)
-beta = np.logspace(-2, 2, 320)       # B_T / K_D,eff (dimensionless)
+def load_params(path: Path) -> dict:
+    with path.open("r", encoding="utf-8") as f:
+        return json.load(f)
 
-C1, RHO = np.meshgrid(c, rho_R)
-C2, BETA = np.meshgrid(c, beta)
 
-# Organized RI: occupancy dependence times an explicitly illustrative
-# architecture factor. No absolute R_T optimum is asserted.
-def occupancy(c):
-    return (c / (K_B + c)) * (K_A / (K_A + c))
+def disk_axis_attenuation(a_um: float, z_um: float) -> float:
+    """Normalized on-axis steady field of a uniformly emitting circular disk.
 
-def g_arch(rho):
-    return 4.0 * rho / (1.0 + rho)**2
+    eta(z) = [sqrt(a^2 + z^2) - z] / a, with eta(0)=1.
+    """
+    return (np.sqrt(a_um * a_um + z_um * z_um) - z_um) / a_um
 
-relay_raw = occupancy(C1) * g_arch(RHO)
-relay_norm = relay_raw / np.nanmax(relay_raw)
 
-# Conventional buffered diffusion: rapid-equilibrium buffer-capacity limit.
-# Let beta = B_T / K_D,eff and u = c / K_D,eff.
-# Then kappa = beta / (1 + u)^2 and D_app/D_free = 1/(1+kappa).
-u = C2 / K_D_EFF
-kappa = BETA / (1.0 + u)**2
-buffer_ratio = 1.0 / (1.0 + kappa)
+def source_flux_density(p: dict) -> float:
+    """Disk-source flux density derived from active AC production.
 
-c_max = np.sqrt(K_A * K_B)
-rho_max = 1.0
+    The conversion 1 uM*um^3 = 602.214076 molecules converts the total
+    molecular production rate to concentration-volume per unit time.
+    """
+    sb = p["source_biology"]
+    a = p["geometry"]["source_radius_um"]
+    q_mol_s = sb["active_AC_count"] * sb["turnover_cAMP_per_AC_per_s"]
+    conv = sb["conversion_molecules_per_uM_um3"]
+    return q_mol_s / (conv * np.pi * a * a)
 
-plt.rcParams.update({
-    'font.size': 9,
-    'axes.titlesize': 9.5,
-    'axes.labelsize': 9,
-    'xtick.labelsize': 8,
-    'ytick.labelsize': 8,
-    'legend.fontsize': 8,
-    'pdf.fonttype': 42,
-    'ps.fonttype': 42,
-})
 
-fig, axes = plt.subplots(1, 2, figsize=(8.25, 3.35))
-fig.subplots_adjust(left=0.10, right=0.94, bottom=0.17, top=0.86, wspace=0.62)
-levels = np.linspace(0, 1, 101)
-contours = [0.25, 0.50, 0.75]
+def source_surface_concentration(p: dict) -> float:
+    c0 = p["cAMP"]["rest_uM"]
+    Dfree = p["cAMP"]["D_free_um2_per_s"]
+    a = p["geometry"]["source_radius_um"]
+    Jsrc = source_flux_density(p)
+    return c0 + Jsrc * a / Dfree
 
-# A. Organized RI
-ax = axes[0]
-cf1 = ax.contourf(C1, RHO, relay_norm, levels=levels, cmap='viridis')
-cs1 = ax.contour(C1, RHO, relay_norm, levels=contours, colors='white', linewidths=0.9)
-ax.clabel(cs1, inline=True, fontsize=7, fmt='%.2f')
-ax.plot(c_max, rho_max, marker='o', ms=5.2, mfc='none', mec='white', mew=1.4)
-ax.set_xscale('log')
-ax.set_yscale('log')
-ax.set_xlim(c.min(), c.max())
-ax.set_ylim(rho_R.min(), rho_R.max())
-ax.set_xlabel(r'Local cAMP, $c$ ($\mu$M)')
-ax.set_ylabel('Relative organized RI abundance\n' + r'$\rho_R=R_T/R_*$', labelpad=5)
-ax.set_title('A. Organized RI: structured buffered diffusion', loc='center', fontweight='bold', pad=7)
-cbar1 = fig.colorbar(cf1, ax=ax, pad=0.035, fraction=0.050)
-cbar1.set_label(r'Normalized $D_{\mathrm{relay}}$')
 
-# B. Unorganized RI
-ax = axes[1]
-cf2 = ax.contourf(C2, BETA, buffer_ratio, levels=levels, cmap='viridis')
-cs2 = ax.contour(C2, BETA, buffer_ratio, levels=contours, colors='white', linewidths=0.9)
-ax.clabel(cs2, inline=True, fontsize=7, fmt='%.2f')
-ax.set_xscale('log')
-ax.set_yscale('log')
-ax.set_xlim(c.min(), c.max())
-ax.set_ylim(beta.min(), beta.max())
-ax.set_xlabel(r'Local cAMP, $c$ ($\mu$M)')
-ax.set_ylabel('Dimensionless buffer abundance\n' + r'$\beta=B_T/K_{D,\mathrm{eff}}$', labelpad=5)
-ax.set_title('B. Unorganized RI: conventional buffered diffusion', loc='center', fontweight='bold', pad=7)
-cbar2 = fig.colorbar(cf2, ax=ax, pad=0.035, fraction=0.050)
-cbar2.set_label(r'$D_{\mathrm{buffer}}/D_{\mathrm{free}}$')
+def common_source_input(p: dict) -> float:
+    """Common proximal free-cAMP concentration during the 1-s source event."""
+    c0 = p["cAMP"]["rest_uM"]
+    Jsrc = source_flux_density(p)
+    Dfree = p["cAMP"]["D_free_um2_per_s"]
+    a = p["geometry"]["source_radius_um"]
+    zc = p["geometry"]["common_coupling_distance_um"]
+    # Steady on-axis field of a uniformly emitting disk in a half-space:
+    # c(z)-c0 = (Jsrc/Dfree) * [sqrt(a^2+z^2)-z].
+    return c0 + (Jsrc / Dfree) * (np.sqrt(a*a + zc*zc) - zc)
 
-fig.savefig(OUT / 'fig06.pdf', dpi=300, bbox_inches='tight')
-fig.savefig(OUT / 'fig06.png', dpi=300, bbox_inches='tight')
-plt.close(fig)
 
-params = {
-    'K_B_uM': K_B,
-    'K_A_uM': K_A,
-    'K_D_eff_uM': float(K_D_EFF),
-    'cAMP_range_uM': [float(c.min()), float(c.max())],
-    'rho_R_range': [float(rho_R.min()), float(rho_R.max())],
-    'beta_range': [float(beta.min()), float(beta.max())],
-    'organized_architecture_factor': 'g_R(rho)=4*rho/(1+rho)^2',
-    'organized_surface': 'Drelay_norm = normalize[g_R(rho_R) * c/(K_B+c) * K_A/(K_A+c)]',
-    'conventional_surface': 'kappa=beta/(1+c/K_D_eff)^2; Dbuffer/Dfree=1/(1+kappa)',
-    'organized_surface_maximum': {'c_uM': float(c_max), 'rho_R': rho_max},
-    'interpretation': {
-        'rho_R': 'R_T/R_*; R_* is an illustrative reference abundance and is not inferred from Fig. 5',
-        'beta': 'B_T/K_D_eff; dimensionless buffer abundance in the conventional rapid-equilibrium limit',
-        'colorbars': 'separate scales; panels are limiting regimes and are not added pointwise'
+def make_time_grid(p: dict) -> np.ndarray:
+    t0 = p["time"]["stimulus_start_s"]
+    dur = p["time"]["stimulus_duration_s"]
+    t1 = t0 + dur
+    dt = p["time"]["early_dt_s"]
+    tend = p["time"]["t_end_s"]
+    nlate = int(p["time"]["late_n_points"])
+    early = np.arange(t0, t1 + 0.5 * dt, dt)
+    late = np.linspace(t1, tend, nlate)
+    return np.r_[early, late[1:]]
+
+
+def common_functions(p: dict):
+    KB = p["RI"]["KB_uM"]
+    KA = p["RI"]["KA_uM"]
+    kon = p["activation"]["kon_A_per_uM_s"]
+    koff = p["activation"]["koff_A_per_s"]
+
+    def S(c):
+        return c / (KB + c)
+
+    def A(c):
+        return KA / (KA + c)
+
+    def f_ss(c):
+        rate_on = kon * c * S(c)
+        return rate_on / (rate_on + koff)
+
+    return S, A, f_ss
+
+
+def fixed_boundary_jac_sparsity(N: int):
+    """Jacobian sparsity for [N-1 cAMP unknowns, N activation fractions]."""
+    M = N - 1
+    nstate = M + N
+    J = lil_matrix((nstate, nstate), dtype=int)
+    for i in range(M):
+        J[i, i] = 1
+        if i > 0:
+            J[i, i - 1] = 1
+        if i < M - 1:
+            J[i, i + 1] = 1
+    for i in range(N):
+        row = M + i
+        J[row, row] = 1
+        if i >= 1:
+            J[row, i - 1] = 1
+    return J.tocsr()
+
+
+def integrate_fixed_boundary(p: dict, t_eval: np.ndarray, rhs_builder, N: int, c_input: float, c_rest: float, f0: float):
+    """Integrate with common Dirichlet input during the pulse and rest afterward."""
+    M = N - 1
+    t_switch = p["time"]["stimulus_start_s"] + p["time"]["stimulus_duration_s"]
+    early = t_eval[t_eval <= t_switch + 1e-12]
+    late = t_eval[t_eval >= t_switch - 1e-12]
+    method = p["numerics"]["method"]
+    rtol = p["numerics"]["rtol"]
+    atol = p["numerics"]["atol"]
+    max_step = p["numerics"]["max_step_s"]
+    sparsity = fixed_boundary_jac_sparsity(N)
+
+    y0 = np.r_[np.full(M, c_rest), np.full(N, f0)]
+    sol1 = solve_ivp(
+        lambda t, y: rhs_builder(t, y, c_input),
+        (early[0], early[-1]), y0, t_eval=early,
+        method=method, rtol=rtol, atol=atol, max_step=max_step,
+        jac_sparsity=sparsity,
+    )
+    if not sol1.success:
+        raise RuntimeError(sol1.message)
+
+    c1 = np.vstack([np.full(sol1.t.size, c_input), sol1.y[:M]])
+    f1 = sol1.y[M:]
+    y1 = np.r_[c1[1:, -1], f1[:, -1]]
+
+    sol2 = solve_ivp(
+        lambda t, y: rhs_builder(t, y, c_rest),
+        (late[0], late[-1]), y1, t_eval=late,
+        method=method, rtol=rtol, atol=atol, max_step=max_step,
+        jac_sparsity=sparsity,
+    )
+    if not sol2.success:
+        raise RuntimeError(sol2.message)
+
+    c2 = np.vstack([np.full(sol2.t.size, c_rest), sol2.y[:M]])
+    f2 = sol2.y[M:]
+
+    t = np.r_[sol1.t, sol2.t[1:]]
+    c = np.c_[c1, c2[:, 1:]]
+    f = np.c_[f1, f2[:, 1:]]
+    return t, c, f
+
+
+def simulate_organized(p: dict, t_eval: np.ndarray, c_input: float):
+    """Structured-buffered branch on the reduced RI coordinate s."""
+    S, A, f_ss = common_functions(p)
+    zc = p["geometry"]["common_coupling_distance_um"]
+    L = p["geometry"]["domain_um"]
+    N = int(p["geometry"]["n_nodes_organized"])
+    s = np.linspace(zc, L, N)
+    ds = s[1] - s[0]
+
+    c_rest = p["cAMP"]["rest_uM"]
+    D0 = p["RI"]["D_relay_0_um2_per_s"]
+    k_clear = p["cAMP"]["k_clear_per_s"]
+    kon = p["activation"]["kon_A_per_uM_s"]
+    koff = p["activation"]["koff_A_per_s"]
+    krel = p["activation"]["k_rel_per_s"]
+    RT = p["RI"]["RT_uM"]
+    HT = RT / p["RI"]["rho_R_to_C"]
+    f0 = float(f_ss(c_rest))
+    R_rest = krel * f0 * f0 * HT
+    M = N - 1
+
+    def rhs(t, y, boundary_c):
+        c_int = np.clip(y[:M], 1e-12, 1e4)
+        f = np.clip(y[M:], 0.0, 1.0)
+        c = np.r_[boundary_c, c_int]
+
+        D = D0 * S(c) * A(c)
+        Dface = 2.0 * D[:-1] * D[1:] / (D[:-1] + D[1:] + 1e-30)
+        q = Dface * np.diff(c) / ds
+
+        dc = np.zeros(M)
+        dc[:-1] = np.diff(q) / ds
+        dc[-1] = -2.0 * q[-1] / ds  # reflecting distal boundary
+        dc -= k_clear * (c_int - c_rest)
+
+        df = kon * c * S(c) * (1.0 - f) - koff * f
+        return np.r_[dc, df]
+
+    t, c, f = integrate_fixed_boundary(p, t_eval, rhs, N, c_input, c_rest, f0)
+    release = krel * f * f * HT
+    evoked = release - R_rest
+
+    return {
+        "branch": "Organized RI",
+        "x": s,
+        "t": t,
+        "c": c,
+        "f": f,
+        "release": release,
+        "evoked": evoked,
+        "R_rest": R_rest,
+        "c_input": c_input,
     }
-}
-with open(OUT / 'fig06_parameters.json', 'w') as f:
-    json.dump(params, f, indent=2)
 
-with open(OUT / 'fig06_parameters.txt', 'w') as f:
-    f.write('FIGURE 6 REVISED PARAMETERS AND DEFINITIONS\n')
-    f.write('==========================================\n\n')
-    f.write('Shared cAMP-binding thresholds\n')
-    f.write(f'K_B = {K_B:.3g} uM\n')
-    f.write(f'K_A = {K_A:.3g} uM\n')
-    f.write(f'K_D,eff = sqrt(K_A*K_B) = {K_D_EFF:.6f} uM\n')
-    f.write(f'c_max = sqrt(K_A*K_B) = {c_max:.6f} uM\n\n')
-    f.write('Panel A: organized RI / structured buffered diffusion\n')
-    f.write('rho_R = R_T / R_* (dimensionless)\n')
-    f.write('R_* is an illustrative reference abundance; no absolute RI concentration optimum is asserted.\n')
-    f.write('g_R(rho_R) = 4*rho_R/(1+rho_R)^2\n')
-    f.write('D_relay(c,rho_R) proportional to g_R(rho_R) * [c/(K_B+c)] * [K_A/(K_A+c)]\n')
-    f.write('Displayed surface = D_relay normalized to its own maximum.\n')
-    f.write('Surface maximum: rho_R = 1, c = sqrt(K_A*K_B).\n')
-    f.write('rho_R plotted from 0.01 to 100.\n\n')
-    f.write('Panel B: unorganized RI / conventional buffered diffusion\n')
-    f.write('K_D,eff = sqrt(K_A*K_B)\n')
-    f.write('beta = B_T / K_D,eff (dimensionless buffer abundance)\n')
-    f.write('u = c / K_D,eff\n')
-    f.write('kappa = beta/(1+u)^2\n')
-    f.write('D_buffer/D_free = 1/(1+kappa)\n')
-    f.write('beta plotted from 0.01 to 100.\n\n')
-    f.write('Interpretive constraints\n')
-    f.write('- Panel A cAMP dependence is derived from the source/acceptor occupancy closure.\n')
-    f.write('- Panel A RI-abundance dependence is explicitly phenomenological and illustrative.\n')
-    f.write('- R_* and g_R are not inferred from the Fig. 5 R_T optimum.\n')
-    f.write('- Panel B is the conventional rapid-equilibrium buffering limit.\n')
-    f.write('- The panels are limiting effective transport regimes, not parallel diffusion coefficients to be added pointwise.\n')
-    f.write('- Separate colorbars are used because normalized D_relay and D_buffer/D_free are different quantities.\n')
 
-# Small numerical summary for reproducibility.
-with open(OUT / 'fig06_summary.txt', 'w') as f:
-    f.write(f'c_max_uM\t{c_max:.8f}\n')
-    f.write(f'rho_R_max\t{rho_max:.8f}\n')
-    f.write(f'K_D_eff_uM\t{K_D_EFF:.8f}\n')
+def simulate_unorganized(p: dict, t_eval: np.ndarray, c_input: float):
+    """Conventional buffered-diffusion branch downstream of the common input.
+
+    Downstream spreading is represented with radially symmetric 3D finite-volume
+    transport. The proximal concentration waveform is identical to the organized
+    branch, so source differences do not contribute to the comparison.
+    """
+    S, _, f_ss = common_functions(p)
+
+    a = p["geometry"]["source_radius_um"]
+    zc = p["geometry"]["common_coupling_distance_um"]
+    L = p["geometry"]["domain_um"]
+    N = int(p["geometry"]["n_nodes_unorganized"])
+    x = np.linspace(zc, L, N)  # distance from source plane/surface
+    r = a + x                   # radial coordinate used for 3D dilution
+    dr = r[1] - r[0]
+
+    c_rest = p["cAMP"]["rest_uM"]
+    Dfree = p["cAMP"]["D_free_um2_per_s"]
+    RT = p["RI"]["RT_uM"]
+    KD = np.sqrt(p["RI"]["KA_uM"] * p["RI"]["KB_uM"])
+    k_clear = p["cAMP"]["k_clear_per_s"]
+    kon = p["activation"]["kon_A_per_uM_s"]
+    koff = p["activation"]["koff_A_per_s"]
+    krel = p["activation"]["k_rel_per_s"]
+    HT = RT / p["RI"]["rho_R_to_C"]
+    f0 = float(f_ss(c_rest))
+    R_rest = krel * f0 * f0 * HT
+    M = N - 1
+
+    # Face radii and control volumes for unknown nodes 1..N-1. Node 0 is the
+    # imposed common concentration boundary; the distal node is a half volume.
+    rf = 0.5 * (r[:-1] + r[1:])
+    inner = rf
+    outer = np.r_[rf[1:], r[-1]]
+    vol = (outer**3 - inner**3) / 3.0
+
+    def kappa(c):
+        return RT * KD / (KD + c) ** 2
+
+    def rhs(t, y, boundary_c):
+        c_int = np.clip(y[:M], 1e-12, 1e5)
+        f = np.clip(y[M:], 0.0, 1.0)
+        c = np.r_[boundary_c, c_int]
+
+        # Rapid-equilibrium immobile-buffer reduction:
+        # (1 + kappa(c)) dc/dt = Dfree * radial_laplacian(c)
+        #                         - k_clear * (c - c_rest).
+        # The buffer-capacity factor therefore divides the complete local
+        # diffusion-plus-clearance balance; it is not placed inside the flux.
+        q_out = -Dfree * np.diff(c) / dr
+        F = rf * rf * q_out
+
+        dc = np.empty(M)
+        dc[:-1] = (F[:-1] - F[1:]) / vol[:-1]
+        dc[-1] = F[-1] / vol[-1]  # reflecting distal boundary
+        dc -= k_clear * (c_int - c_rest)
+        dc /= (1.0 + kappa(c_int))
+
+        df = kon * c * S(c) * (1.0 - f) - koff * f
+        return np.r_[dc, df]
+
+    t, c, f = integrate_fixed_boundary(p, t_eval, rhs, N, c_input, c_rest, f0)
+    release = krel * f * f * HT
+    evoked = release - R_rest
+
+    return {
+        "branch": "Unorganized RI",
+        "x": x,
+        "t": t,
+        "c": c,
+        "f": f,
+        "release": release,
+        "evoked": evoked,
+        "R_rest": R_rest,
+        "c_input": c_input,
+    }
+
+
+def nearest_index(x: np.ndarray, target: float) -> int:
+    return int(np.argmin(np.abs(x - target)))
+
+
+def summarize(branch: dict, distances: list[float]) -> list[dict]:
+    rows = []
+    for d in distances:
+        i = nearest_index(branch["x"], d)
+        ev = branch["evoked"][i]
+        j = int(np.argmax(ev))
+        rows.append({
+            "branch": branch["branch"],
+            "distance_um": d,
+            "actual_grid_distance_um": float(branch["x"][i]),
+            "peak_cAMP_uM": float(np.max(branch["c"][i])),
+            "peak_local_PKAc_release_uM_per_s": float(np.max(branch["release"][i])),
+            "peak_evoked_PKAc_release_uM_per_s": float(ev[j]),
+            "time_peak_evoked_PKAc_release_s": float(branch["t"][j]),
+            "AUC_evoked_PKAc_release_uM": float(np.trapezoid(np.maximum(ev, 0.0), branch["t"])),
+        })
+    return rows
+
+
+def export_traces(branches: list[dict], distances: list[float], out: Path):
+    rows = []
+    for b in branches:
+        for d in distances:
+            i = nearest_index(b["x"], d)
+            for k, t in enumerate(b["t"]):
+                rows.append({
+                    "branch": b["branch"],
+                    "distance_um": d,
+                    "time_s": float(t),
+                    "local_PKAc_release_uM_per_s": float(b["release"][i, k]),
+                    "evoked_PKAc_release_uM_per_s": float(b["evoked"][i, k]),
+                    "cAMP_uM": float(b["c"][i, k]),
+                })
+    pd.DataFrame(rows).to_csv(out, index=False)
+
+
+def render_main(p: dict, unorg: dict, org: dict, metrics: pd.DataFrame, out: Path):
+    distances = p["readout"]["distances_um"]
+    display_tmax = p["time"].get("kymograph_display_tmax_s", p["time"]["figure_display_tmax_s"])
+    xlim = 20.0
+
+    mask_u_t = unorg["t"] <= display_tmax
+    mask_o_t = org["t"] <= display_tmax
+    mask_u_x = unorg["x"] <= xlim
+    mask_o_x = org["x"] <= xlim
+    vmax = max(
+        np.max(np.maximum(unorg["evoked"][np.ix_(mask_u_x, mask_u_t)], 0.0)),
+        np.max(np.maximum(org["evoked"][np.ix_(mask_o_x, mask_o_t)], 0.0)),
+    )
+
+    fig = plt.figure(figsize=(11.4, 8.2))
+    gs = fig.add_gridspec(3, 6, height_ratios=[0.75, 2.25, 1.6], hspace=0.82, wspace=1.05)
+
+    axA = fig.add_subplot(gs[0, :])
+    axA.axis("off")
+    axA.text(0.02, 0.72, "A", transform=axA.transAxes, fontweight="bold", fontsize=12)
+    sb = p["source_biology"]
+    qsrc = sb["active_AC_count"] * sb["turnover_cAMP_per_AC_per_s"]
+    csurf = source_surface_concentration(p)
+    cin = common_source_input(p)
+    axA.text(0.35, 0.84, "Localized active AC patch", fontweight="bold", transform=axA.transAxes)
+    axA.text(0.29, 0.62, f"Q$_{{AC}}$ = {qsrc:.0f} cAMP s$^{{-1}}$; source surface = {1000*csurf:.0f} nM", transform=axA.transAxes)
+    axA.text(0.30, 0.43, f"common input at 20 nm = {1000*cin:.0f} nM", transform=axA.transAxes)
+    axA.text(0.10, 0.25, "Unorganized RI", fontweight="bold", transform=axA.transAxes)
+    axA.text(0.10, 0.04, "3D geometric dilution + conventional buffered diffusion", transform=axA.transAxes)
+    axA.text(0.62, 0.25, "Organized RI", fontweight="bold", transform=axA.transAxes)
+    axA.text(0.62, 0.04, "structured buffered diffusion + distal local PKA", transform=axA.transAxes)
+
+    axB = fig.add_subplot(gs[1, 0:3])
+    axC = fig.add_subplot(gs[1, 3:6])
+
+    for ax, b, letter, title, ylabel, mt, mx in [
+        (axB, unorg, "B", "Unorganized RI", "Radial distance from source (µm)", mask_u_t, mask_u_x),
+        (axC, org, "C", "Organized RI", r"Organized path length, $s$ (µm)", mask_o_t, mask_o_x),
+    ]:
+        Z = np.maximum(b["evoked"][np.ix_(mx, mt)], 0.0)
+        im = ax.pcolormesh(b["t"][mt], b["x"][mx], Z, shading="auto", vmin=0.0, vmax=vmax, cmap="magma")
+        ax.set(xlabel="Time (s)", ylabel=ylabel, title=title,
+               xlim=(0, display_tmax), ylim=(0, xlim))
+        ax.text(-0.13, 1.05, letter, transform=ax.transAxes, fontweight="bold", fontsize=12)
+        ax.plot([0, 1], [20.8, 20.8], lw=3, clip_on=False)
+    cb = fig.colorbar(im, ax=[axB, axC], fraction=0.026, pad=0.025)
+    cb.set_label("Evoked local PKAc release (µM s$^{-1}$)")
+
+    axD = fig.add_subplot(gs[2, 0:3])
+    axE = fig.add_subplot(gs[2, 3:6])
+
+    for name, marker in [("Unorganized RI", "o"), ("Organized RI", "s")]:
+        dd = metrics[metrics.branch == name]
+        axD.plot(dd.distance_um, dd.peak_evoked_PKAc_release_uM_per_s, marker=marker, label=name)
+    axD.set_yscale("log")
+    axD.set(xlabel="Downstream coordinate (µm)", ylabel="Peak evoked local PKAc release\n(µM s$^{-1}$)")
+    axD.text(0.0, 1.06, "D", transform=axD.transAxes, fontweight="bold", fontsize=12)
+
+    do = metrics[metrics.branch == "Organized RI"].sort_values("distance_um")
+    slope, intercept, r_att, _, _ = linregress(do.distance_um.values, np.log(do.peak_evoked_PKAc_release_uM_per_s.values))
+    lambda_app = -1.0 / slope
+    xx = np.linspace(min(distances), max(distances), 150)
+    yy = np.exp(intercept + slope * xx)
+    axD.plot(xx, yy, ls="--", label=f"organized fit, λapp={lambda_app:.2f} µm")
+    axD.legend(frameon=False, fontsize=8)
+
+    x2 = do.distance_um.values ** 2
+    tp = do.time_peak_evoked_PKAc_release_s.values
+    sl2, in2, r_lat, _, _ = linregress(x2, tp)
+    axE.plot(x2, tp, "o")
+    xx2 = np.linspace(0, max(x2) * 1.03, 150)
+    axE.plot(xx2, in2 + sl2 * xx2, ls="--")
+    axE.set(xlabel=r"Path length squared, $s^2$ (µm$^2$)", ylabel="Time to peak local PKAc release (s)")
+    axE.text(0.0, 1.06, "E", transform=axE.transAxes, fontweight="bold", fontsize=12)
+    axE.text(0.05, 0.9, f"R² = {r_lat*r_lat:.3f}", transform=axE.transAxes)
+
+    fig.savefig(out.with_suffix(".png"), dpi=300, bbox_inches="tight")
+    fig.savefig(out.with_suffix(".pdf"), bbox_inches="tight")
+    plt.close(fig)
+
+    return lambda_app, r_att*r_att, sl2, in2, r_lat*r_lat
+
+
+def render_supplement(p: dict, unorg: dict, org: dict, out: Path):
+    distances = p["readout"]["distances_um"]
+    fig, axs = plt.subplots(2, 2, figsize=(8.0, 5.8), sharex=True, sharey=True)
+    for ax, d in zip(axs.flat, distances):
+        for b in (unorg, org):
+            i = nearest_index(b["x"], d)
+            ax.plot(b["t"], b["release"][i], label=b["branch"])
+        ax.axhline(org["R_rest"], ls="--", lw=0.9, label="resting output" if d == distances[0] else None)
+        ax.set_yscale("log")
+        ax.set_title(f"{d:g} µm")
+        ax.set_xlim(0, p["time"].get("supplement_display_tmax_s", p["time"]["figure_display_tmax_s"]))
+    axs[1, 0].set_xlabel("Time (s)")
+    axs[1, 1].set_xlabel("Time (s)")
+    axs[0, 0].set_ylabel("Local PKAc release (µM s$^{-1}$)")
+    axs[1, 0].set_ylabel("Local PKAc release (µM s$^{-1}$)")
+    axs[0, 0].legend(frameon=False, fontsize=8)
+    fig.tight_layout()
+    fig.savefig(out.with_suffix(".png"), dpi=300, bbox_inches="tight")
+    fig.savefig(out.with_suffix(".pdf"), bbox_inches="tight")
+    plt.close(fig)
+
+
+def main():
+    param_path = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "fig06_parameters.json"
+    p = load_params(param_path)
+    outdir = OUT
+    t_eval = make_time_grid(p)
+    c_input = common_source_input(p)
+    Jsrc = source_flux_density(p)
+    c_surface = source_surface_concentration(p)
+    sb = p["source_biology"]
+    qsrc = sb["active_AC_count"] * sb["turnover_cAMP_per_AC_per_s"]
+
+    pd.DataFrame([{
+        "active_AC_count": sb["active_AC_count"],
+        "turnover_cAMP_per_AC_per_s": sb["turnover_cAMP_per_AC_per_s"],
+        "total_cAMP_production_molecules_per_s": qsrc,
+        "source_radius_um": p["geometry"]["source_radius_um"],
+        "source_flux_density_uM_um_per_s": Jsrc,
+        "rest_cAMP_uM": p["cAMP"]["rest_uM"],
+        "source_surface_cAMP_uM": c_surface,
+        "coupling_distance_um": p["geometry"]["common_coupling_distance_um"],
+        "common_input_cAMP_uM": c_input,
+    }]).to_csv(outdir / "Fig6_source_summary.csv", index=False)
+
+    print(f"AC source: {sb['active_AC_count']} x {sb['turnover_cAMP_per_AC_per_s']:.1f} cAMP/s = {qsrc:.0f} molecules/s", flush=True)
+    print(f"Derived disk flux density: {Jsrc:.6f} µM·µm/s", flush=True)
+    print(f"Source-surface cAMP: {c_surface:.6f} µM", flush=True)
+    print(f"Common proximal cAMP input at {1000*p['geometry']['common_coupling_distance_um']:.0f} nm: {c_input:.6f} µM", flush=True)
+    print("Running unorganized branch ...", flush=True)
+    unorg = simulate_unorganized(p, t_eval, c_input)
+    print("Running organized branch ...", flush=True)
+    org = simulate_organized(p, t_eval, c_input)
+
+    distances = [float(v) for v in p["readout"]["distances_um"]]
+    metrics = pd.DataFrame(summarize(unorg, distances) + summarize(org, distances))
+    metrics.to_csv(outdir / "Fig6_metrics.csv", index=False)
+
+    export_traces([unorg, org], distances, outdir / "Fig6_traces.csv")
+    np.savez_compressed(
+        outdir / "Fig6_fields.npz",
+        t_unorganized=unorg["t"], x_unorganized=unorg["x"], c_unorganized=unorg["c"], evoked_unorganized=unorg["evoked"],
+        t_organized=org["t"], x_organized=org["x"], c_organized=org["c"], evoked_organized=org["evoked"],
+        common_input_uM=np.array([c_input]),
+        source_surface_uM=np.array([c_surface]),
+        source_flux_density_uM_um_per_s=np.array([Jsrc]),
+        total_source_molecules_per_s=np.array([qsrc]),
+    )
+
+    lam, r2att, sl2, in2, r2lat = render_main(
+        p, unorg, org, metrics, outdir / "Fig6_final_main"
+    )
+    render_supplement(p, unorg, org, outdir / "Fig6_diagnostic_traces_log")
+
+    print(metrics.to_string(index=False))
+    print(f"\nOrganized apparent attenuation length: {lam:.3f} µm (log-linear R²={r2att:.4f})")
+    print(f"Organized latency fit: t_peak = {in2:.6f} + {sl2:.6f} x²; R²={r2lat:.4f}")
+    print(f"Resting local PKAc release: {org['R_rest']:.9g} µM/s")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fig. 7 intermediate-regime sensitivity to lateral escape from the productive path.
+"""Fig. 6 intermediate-regime sensitivity to lateral escape from the productive path.
 
 This is a deliberately phenomenological extension of the reference organized-path
 model. A first-order loss term, -k_escape * (c - c_rest), removes evoked free cAMP
@@ -7,14 +7,14 @@ from the reduced productive-path coordinate into an unresolved bulk compartment.
 It is not cAMP degradation and no bulk return flux is resolved. k_escape = 0 is the
 reference high-recapture organized-path limit.
 
-All reference Fig. 7 source, geometry, RI, activation, clearance, and numerical
+All reference Fig. 6 source, geometry, RI, activation, clearance, and numerical
 parameters are retained. The observation window is 30 s to resolve delayed peaks.
 
 Outputs:
-  outputs/Fig7_escape_sensitivity.csv
-  outputs/Fig7_escape_thresholds.csv
-  outputs/Fig7_escape_sensitivity.png
-  outputs/Fig7_escape_sensitivity.pdf
+  outputs/Fig6_escape_sensitivity.csv
+  outputs/Fig6_escape_thresholds.csv
+  outputs/Fig6_escape_sensitivity.png
+  outputs/Fig6_escape_sensitivity.pdf
 """
 from __future__ import annotations
 
@@ -27,12 +27,12 @@ import pandas as pd
 from scipy.stats import linregress
 import matplotlib.pyplot as plt
 
-import fig07_simulation as f7
+import fig06_simulation as f6
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "outputs"
 OUT.mkdir(exist_ok=True)
-PARAMS = HERE / "fig07_parameters.json"
+PARAMS = HERE / "fig06_parameters.json"
 TARGET_UM = 20.0
 SENSITIVITY_T_END_S = 30.0
 
@@ -59,7 +59,7 @@ def fit_attenuation(metrics: pd.DataFrame) -> tuple[float, float]:
 
 def simulate_organized_escape(p: dict, t_eval: np.ndarray, c_input: float, k_escape: float):
     """Reference organized branch plus phenomenological lateral escape."""
-    S, A, f_ss = f7.common_functions(p)
+    S, A, f_ss = f6.common_functions(p)
     zc = p["geometry"]["common_coupling_distance_um"]
     L = p["geometry"]["domain_um"]
     N = int(p["geometry"]["n_nodes_organized"])
@@ -99,7 +99,7 @@ def simulate_organized_escape(p: dict, t_eval: np.ndarray, c_input: float, k_esc
         df = kon * c * S(c) * (1.0 - f) - koff * f
         return np.r_[dc, df]
 
-    t, c, f = f7.integrate_fixed_boundary(p, t_eval, rhs, N, c_input, c_rest, f0)
+    t, c, f = f6.integrate_fixed_boundary(p, t_eval, rhs, N, c_input, c_rest, f0)
     release = krel * f * f * HT
     evoked = release - R_rest
     return {
@@ -148,22 +148,22 @@ def main() -> None:
     p0["time"]["t_end_s"] = SENSITIVITY_T_END_S
     p0["time"]["late_n_points"] = int(round((SENSITIVITY_T_END_S - t_switch) / reference_late_dt)) + 1
 
-    t_eval = f7.make_time_grid(p0)
-    c_input = f7.common_source_input(p0)
+    t_eval = f6.make_time_grid(p0)
+    c_input = f6.common_source_input(p0)
     distances = [float(v) for v in p0["readout"]["distances_um"]]
 
     # Matched conventional reference is unchanged by the organized-path escape parameter.
-    unorg = f7.simulate_unorganized(p0, t_eval, c_input)
-    u20 = pd.DataFrame(f7.summarize(unorg, [TARGET_UM])).iloc[0]
+    unorg = f6.simulate_unorganized(p0, t_eval, c_input)
+    u20 = pd.DataFrame(f6.summarize(unorg, [TARGET_UM])).iloc[0]
     unorg_total_over_basal = u20["peak_local_PKAc_release_uM_per_s"] / unorg["R_rest"]
 
     rows = []
     for k_escape in ESCAPE_VALUES:
         org = simulate_organized_escape(copy.deepcopy(p0), t_eval, c_input, float(k_escape))
-        metrics = pd.DataFrame(f7.summarize(org, distances))
+        metrics = pd.DataFrame(f6.summarize(org, distances))
         lam, r2 = fit_attenuation(metrics)
         row20 = metrics.loc[(metrics["distance_um"] - TARGET_UM).abs().idxmin()]
-        i20 = f7.nearest_index(org["x"], TARGET_UM)
+        i20 = f6.nearest_index(org["x"], TARGET_UM)
         j = int(np.argmax(org["evoked"][i20]))
 
         rows.append({
@@ -188,7 +188,7 @@ def main() -> None:
         })
 
     df = pd.DataFrame(rows).sort_values("k_escape_per_s")
-    df.to_csv(OUT / "Fig7_escape_sensitivity.csv", index=False)
+    df.to_csv(OUT / "Fig6_escape_sensitivity.csv", index=False)
 
     thresholds = []
     for thr in OUTPUT_THRESHOLDS:
@@ -197,7 +197,7 @@ def main() -> None:
             "approx_max_k_escape_per_s": interpolate_threshold(df, thr),
         })
     tdf = pd.DataFrame(thresholds)
-    tdf.to_csv(OUT / "Fig7_escape_thresholds.csv", index=False)
+    tdf.to_csv(OUT / "Fig6_escape_thresholds.csv", index=False)
 
     # Compact publication-style diagnostic figure.
     fig, axes = plt.subplots(1, 3, figsize=(9.4, 3.0))
@@ -232,8 +232,8 @@ def main() -> None:
     ax.set_title("C")
 
     fig.tight_layout()
-    fig.savefig(OUT / "Fig7_escape_sensitivity.png", dpi=300, bbox_inches="tight")
-    fig.savefig(OUT / "Fig7_escape_sensitivity.pdf", bbox_inches="tight")
+    fig.savefig(OUT / "Fig6_escape_sensitivity.png", dpi=300, bbox_inches="tight")
+    fig.savefig(OUT / "Fig6_escape_sensitivity.pdf", bbox_inches="tight")
     plt.close(fig)
 
     report = df[np.isclose(df["k_escape_per_s"].to_numpy()[:, None], REPORT_ESCAPE_VALUES[None, :], rtol=0, atol=1e-12).any(axis=1)]

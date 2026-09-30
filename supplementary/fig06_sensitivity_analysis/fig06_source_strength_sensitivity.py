@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Figure 7 sensitivity to localized AC source strength.
+"""Figure 6 sensitivity to localized AC source strength.
 
 The source radius, 20-nm coupling distance, resting cAMP, downstream organized
 transport, RI activation, clearance, and numerical parameters are held at the
-Figure 7 reference values. AC turnover is kept at the reference 100 cAMP/s per
+Figure 6 reference values. AC turnover is kept at the reference 100 cAMP/s per
 active AC and the active-AC count is varied to produce 1,000-10,000 cAMP/s.
 
 Output:
-  outputs/Fig7_source_strength_sensitivity.csv
+  outputs/Fig6_source_strength_sensitivity.csv
 """
 from __future__ import annotations
 
@@ -18,10 +18,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-import fig07_simulation as f7
+import fig06_simulation as f6
 
 HERE = Path(__file__).resolve().parent
-PARAMS = HERE / "fig07_parameters.json"
+PARAMS = HERE / "fig06_parameters.json"
 OUT = HERE / "outputs"
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -41,11 +41,11 @@ def main() -> None:
         p["source_biology"]["active_AC_count"] = float(active_ac)
         p["source_biology"]["total_cAMP_production_molecules_per_s"] = float(qsrc)
 
-        t_eval = f7.make_time_grid(p)
-        c_surface = float(f7.source_surface_concentration(p))
-        c_input = float(f7.common_source_input(p))
-        org = f7.simulate_organized(p, t_eval, c_input)
-        i20 = f7.nearest_index(org["x"], TARGET_UM)
+        t_eval = f6.make_time_grid(p)
+        c_surface = float(f6.source_surface_concentration(p))
+        c_input = float(f6.common_source_input(p))
+        org = f6.simulate_organized(p, t_eval, c_input)
+        i20 = f6.nearest_index(org["x"], TARGET_UM)
         peak_release = float(np.max(org["release"][i20]))
 
         rows.append({
@@ -60,7 +60,7 @@ def main() -> None:
         })
 
     df = pd.DataFrame(rows)
-    df.to_csv(OUT / "Fig7_source_strength_sensitivity.csv", index=False)
+    df.to_csv(OUT / "Fig6_source_strength_sensitivity.csv", index=False)
     print(df.to_string(index=False))
 
 

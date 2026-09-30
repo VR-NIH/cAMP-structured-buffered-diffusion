@@ -2,7 +2,7 @@
 
 Figure S7 examines how proximal cAMP input and loss from the reduced productive coordinate jointly determine distal organized-path signaling.
 
-Every grid point is a full organized-path simulation using the Figure 7 reference spatial grid, 15-s observation window, RI activation kinetics, resting cAMP, structured mobility, and PDE-mediated clearance. Only two quantities are varied:
+Every grid point is a full organized-path simulation using the Figure 6 reference spatial grid, 15-s observation window, RI activation kinetics, resting cAMP, structured mobility, and PDE-mediated clearance. Only two quantities are varied:
 
 1. proximal free-cAMP concentration during the 1-s input;
 2. phenomenological lateral escape rate `k_escape`.
@@ -23,7 +23,7 @@ Lateral escape removes only the evoked component from the productive coordinate 
 From repository root:
 
 ```bash
-python figS07/figS07_source_escape_map.py
+python supplementary/figS07/figS07_source_escape_map.py
 ```
 
-The script imports `fig07_simulation.py`, `fig07_parameters.json`, and the organized-path escape implementation from `fig07/`.
+The script imports `fig06_simulation.py`, `fig06_parameters.json`, and the organized-path escape implementation from `supplementary/fig06_sensitivity_analysis/`.

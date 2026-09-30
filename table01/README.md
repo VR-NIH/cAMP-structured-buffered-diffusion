@@ -1,6 +1,6 @@
 # Table 1 - strong-input transport comparison
 
-`table01_high_input_control.py` reproduces the Table 1 comparison under a 1-s, 2.5-uM proximal free-cAMP pulse using the Figure 7 downstream parameters.
+`table01_high_input_control.py` reproduces the Table 1 comparison under a 1-s, 2.5-uM proximal free-cAMP pulse using the Figure 6 downstream parameters.
 
 The three branches are:
 
